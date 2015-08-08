@@ -2,8 +2,8 @@ local np_density = {
 	offset = -0.5,
 	scale = 1,
 	spread = {x=32, y=24, z=32},
-	octaves = 2,
-	seed = 42691,
+	octaves = 3,
+	seeddiff = 42,
 	persist = 0.6,
 	flags = "eased"
 }
@@ -23,7 +23,7 @@ minetest.register_on_generated(function (minp,maxp)
 	local chulens = {x=emax.x-emin.x+1, y=emax.y-emin.y+1, z=emax.z-emin.z+1}
 
 	-- generate noise data
-	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=minp.x, y=minp.z, z=minp.z})
+	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=emin.x, y=emin.z, z=emin.z})
 
 	-- initialize data index
 	local nixyz = 1
@@ -37,6 +37,8 @@ minetest.register_on_generated(function (minp,maxp)
 					data[nixyz] = c_air
 				elseif density_map[nixyz] > 0.1 then
 					data[nixyz] = c_stone
+				elseif y < emax.y and density_map[nixyz+chulens.x] < 0 then -- data[x,y+1,z] == air?
+					data[nixyz] = c_dirt_wg
 				else
 					data[nixyz] = c_dirt
 				end
