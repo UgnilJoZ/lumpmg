@@ -1,5 +1,7 @@
+local densenoise_offset = 1 - 2 * (minetest.setting_get("lumpmg_air_ratio") or 0.75)
+
 local np_density = {
-	offset = -0.5,
+	offset = densenoise_offset,
 	scale = 1,
 	spread = {x=32, y=24, z=32},
 	octaves = 3,
@@ -8,12 +10,18 @@ local np_density = {
 	flags = "eased"
 }
 
-minetest.register_on_generated(function (minp,maxp)
+minetest.register_on_generated(function (minp,maxp, seed)
+	local pr = PseudoRandom(seed)
+
 	-- read content ids
 	local c_air     = minetest.get_content_id("air")
 	local c_stone   = minetest.get_content_id("stone")
 	local c_dirt    = minetest.get_content_id("dirt")
 	local c_dirt_wg = minetest.get_content_id("dirt_with_grass")
+	local c_grass   = {}
+	for i = 1, 5 do
+		c_grass[i] = minetest.get_content_id("default:grass_"..i)
+	end
 
 	-- read chunk data
 	local vm = minetest.get_voxel_manip()
@@ -35,19 +43,27 @@ minetest.register_on_generated(function (minp,maxp)
 				-- which material?
 				if density_map[nixyz] < 0 then
 					data[nixyz] = c_air
-				elseif density_map[nixyz] > 0.1 then
+				elseif density_map[nixyz] > 0.15 then
 					data[nixyz] = c_stone
 				elseif y < emax.y and density_map[nixyz+chulens.x] < 0 then -- data[x,y+1,z] == air?
+					-- top border between lump and air
 					data[nixyz] = c_dirt_wg
+					-- generate plants?
+					local random_number = pr:next() -- 0..32767
+					if random_number < 8192 then
+						-- grass
+						local grass_number = random_number % 5 + 1
+						data[nixyz + chulens.x] = c_grass[grass_number] -- data[x,y+1,z] = grass
+					end
 				else
 					data[nixyz] = c_dirt
-				end
+				end-- if density
 
 				-- next index
 				nixyz = nixyz + 1
-			end
-		end
-	end
+			end-- for x
+		end-- for y
+	end-- for z
 
 	-- write back the chunk
 	vm:set_data(data)
