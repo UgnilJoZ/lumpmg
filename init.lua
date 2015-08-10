@@ -81,3 +81,7 @@ minetest.register_on_generated(function (minp,maxp, seed)
 	vm:set_data(data)
 	vm:write_to_map(data)
 end)
+
+minetest.register_on_mapgen_init(function(mgparams)
+	minetest.set_mapgen_params({mgname="singlenode", flags="nolight"})
+end)
