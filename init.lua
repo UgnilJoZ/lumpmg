@@ -10,75 +10,97 @@ local np_density = {
 	flags = "eased"
 }
 
-minetest.register_on_generated(function (minp,maxp, seed)
+-- read content ids
+local c_air     = minetest.get_content_id("air")
+local c_ignore  = minetest.get_content_id("ignore")
+local c_stone   = minetest.get_content_id("default:stone")
+local c_obsidian   = minetest.get_content_id("default:obsidian")
+local c_dirt    = minetest.get_content_id("default:dirt")
+local c_dirt_wg = minetest.get_content_id("default:dirt_with_grass")
+local c_grass   = {}
+local blacklist_air = {[c_stone]=true, [c_dirt]=true, [c_dirt_wg]=true}
+for i = 1, 5 do
+	c_grass[i] = minetest.get_content_id("default:grass_"..i)
+	blacklist_air[c_grass[i]]=true
+end
+
+local noisemap
+
+minetest.register_on_generated(function(minp, maxp, seed)
 	local pr = PseudoRandom(seed)
 
-	-- read content ids
-	local c_air     = minetest.get_content_id("air")
-	local c_ignore  = minetest.get_content_id("ignore")
-	local c_stone   = minetest.get_content_id("stone")
-	local c_dirt    = minetest.get_content_id("dirt")
-	local c_dirt_wg = minetest.get_content_id("dirt_with_grass")
-	local c_grass   = {}
-	local blacklist_air = {[c_stone]=true, [c_dirt]=true, [c_dirt_wg]=true}
-	for i = 1, 5 do
-		c_grass[i] = minetest.get_content_id("default:grass_"..i)
-		blacklist_air[c_grass[i]]=true
-	end
-
 	-- read chunk data
-	local vm = minetest.get_voxel_manip()
-	local emin, emax = vm:read_from_map(minp, maxp)
-	local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
+	local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
 	local data = vm:get_data()
-	local chulens = {x=emax.x-emin.x+1, y=emax.y-emin.y+1, z=emax.z-emin.z+1}
+
+	local side_length = maxp.x - minp.x + 1
+	local biglen = side_length+32
+
+	local chulens = {x=side_length, y=side_length, z=side_length}
 
 	-- generate noise data
-	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=emin.x, y=emin.y, z=emin.z})
+	if not noisemap then
+		noisemap = minetest.get_perlin_map(np_density, chulens)
+	end
+	local density_map = noisemap:get3dMap_flat(minp)
 
-	-- initialize data index
+	-- initialize perlin map and data index
 	local nixyz = 1
+	local dixyz = 1
 
 	-- iterate through data and fill with materials
-	for z = emin.z,emax.z do
-		for y = emin.y,emax.y do
-			for x = emin.x,emax.x do
-				if true then
-					-- which material?
-					if density_map[nixyz] < 0 then
-						if not blacklist_air[data[nixyz]] then
-							data[nixyz] = c_air
-						end
-					elseif density_map[nixyz] > 0.15 then
-						data[nixyz] = c_stone
-					elseif y < emax.y and density_map[nixyz+chulens.x] < 0 then -- data[x,y+1,z] == air?
-						-- top border between lump and air
-						data[nixyz] = c_dirt_wg
-						-- generate plants?
-						local random_number = pr:next() -- 0..32767
-						if random_number < 8192 then
-							-- grass
-							local grass_number = random_number % 5 + 1
-							data[nixyz + chulens.x] = c_grass[grass_number] -- data[x,y+1,z] = grass
-						end
-					else
-						data[nixyz] = c_dirt
-					end-- if density
-
-					-- next index
-					nixyz = nixyz + 1
+	dixyz = dixyz+16*biglen*biglen
+	for z = minp.z,maxp.z do
+		dixyz = dixyz+16*biglen
+		for y = minp.y,maxp.y do
+			dixyz = dixyz+16
+			for x = minp.x,maxp.x do
+				local density = density_map[nixyz]
+				-- which material?
+				if density < 0 then
+					if not blacklist_air[data[dixyz]] then
+						data[dixyz] = c_air
+					end
+				elseif density > 0.15 then
+					data[dixyz] = c_stone
+				elseif y < maxp.y -- density map is just calculated from minp to maxp
+				and density_map[nixyz+side_length] < 0 then -- data[x,y+1,z] == air?
+					-- top border between lump and air
+					data[dixyz] = c_dirt_wg
+					-- generate plants?
+					local random_number = pr:next() -- 0..32767
+					if random_number < 8192 then
+						-- grass
+						local grass_number = random_number % 5 + 1
+						data[dixyz + biglen] = c_grass[grass_number] -- data[x,y+1,z] = grass
+					end
+				elseif y > minp.y
+				and density_map[nixyz-side_length] < 0 then
+					data[dixyz] = c_obsidian
 				else
+					data[dixyz] = c_dirt
+				end-- if density
+
+				-- next index
+				nixyz = nixyz + 1
+				--[[else
 					--print("node.name: "..vm:get_node_at({x=x,y=y,z=z}).name)
 					--print("node.id: "..data[nixyz])
 					--print('minetest.get_content_id("air"): '.. c_air)
 					--print("what the")
-				end-- if data
+				end-- if data]]
+				dixyz = dixyz + 1
 			end-- for x
+			dixyz = dixyz+16
 		end-- for y
+		dixyz = dixyz+16*biglen
 	end-- for z
+	--dixyz = dixyz+16*biglen*biglen
 
 	-- write back the chunk
 	vm:set_data(data)
+	vm:set_lighting({day=0, night=0})
+	vm:calc_lighting()
 	vm:write_to_map(data)
 end)
 
