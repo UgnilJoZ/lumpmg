@@ -32,9 +32,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	-- read chunk data
 	local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
 	local data = vm:get_data()
-	local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
-	--print(dump(emin), dump(emax))
-	--print(dump(minp), dump(maxp))
+
 	local side_length = maxp.x - minp.x + 1
 	local biglen = side_length+32
 
