@@ -34,7 +34,7 @@ minetest.register_on_generated(function (minp,maxp, seed)
 	local chulens = {x=emax.x-emin.x+1, y=emax.y-emin.y+1, z=emax.z-emin.z+1}
 
 	-- generate noise data
-	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=emin.x, y=emin.z, z=emin.z})
+	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=emin.x, y=emin.y, z=emin.z})
 
 	-- initialize data index
 	local nixyz = 1
@@ -83,5 +83,5 @@ minetest.register_on_generated(function (minp,maxp, seed)
 end)
 
 minetest.register_on_mapgen_init(function(mgparams)
-	minetest.set_mapgen_params({mgname="singlenode", flags="nolight"})
+	minetest.set_mapgen_params({mgname="singlenode"})
 end)
