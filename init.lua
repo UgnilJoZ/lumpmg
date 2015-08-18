@@ -10,11 +10,21 @@ local np_density = {
 	flags = "eased"
 }
 
+local np_coal = {
+	offset = -1,
+	scale = 1,
+	spread = {x=4, y=4, z=4},
+	octaves = 2,
+	seeddiff = 41,
+	persist = 0.3,
+}
+
 -- read content ids
 local c_air      = minetest.get_content_id("air")
 local c_ignore   = minetest.get_content_id("ignore")
 local c_stone    = minetest.get_content_id("default:stone")
 local c_obsidian = minetest.get_content_id("default:obsidian")
+local c_coal     = minetest.get_content_id("default:stone_with_coal")
 local c_dirt     = minetest.get_content_id("default:dirt")
 local c_dirt_wg  = minetest.get_content_id("default:dirt_with_grass")
 local c_grass    = {}
@@ -39,10 +49,8 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	local chulens = {x=side_length, y=side_length, z=side_length}
 
 	-- generate noise data
-	if not noisemap then
-		noisemap = minetest.get_perlin_map(np_density, chulens)
-	end
-	local density_map = noisemap:get3dMap_flat(minp)
+	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat(minp)
+	local coal_map = minetest.get_perlin_map(np_coal, chulens):get3dMap_flat(minp)
 
 	-- initialize perlin map and data index
 	local nixyz = 1
@@ -62,7 +70,12 @@ minetest.register_on_generated(function(minp, maxp, seed)
 						data[dixyz] = c_air
 					end
 				elseif density > 0.15 then
-					data[dixyz] = c_stone
+					-- stone (maybe with coal)
+					if coal_map[nixyz] > 0 then
+						data[dixyz] = c_coal
+					else
+						data[dixyz] = c_stone
+					end
 				elseif y < maxp.y -- density map is just calculated from minp to maxp
 				and density_map[nixyz+side_length] < 0 then -- data[x,y+1,z] == air?
 					-- top border between lump and air
