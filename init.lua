@@ -11,13 +11,13 @@ local np_density = {
 }
 
 -- read content ids
-local c_air     = minetest.get_content_id("air")
-local c_ignore  = minetest.get_content_id("ignore")
-local c_stone   = minetest.get_content_id("default:stone")
-local c_obsidian   = minetest.get_content_id("default:obsidian")
-local c_dirt    = minetest.get_content_id("default:dirt")
-local c_dirt_wg = minetest.get_content_id("default:dirt_with_grass")
-local c_grass   = {}
+local c_air      = minetest.get_content_id("air")
+local c_ignore   = minetest.get_content_id("ignore")
+local c_stone    = minetest.get_content_id("default:stone")
+local c_obsidian = minetest.get_content_id("default:obsidian")
+local c_dirt     = minetest.get_content_id("default:dirt")
+local c_dirt_wg  = minetest.get_content_id("default:dirt_with_grass")
+local c_grass    = {}
 local blacklist_air = {[c_stone]=true, [c_dirt]=true, [c_dirt_wg]=true}
 for i = 1, 5 do
 	c_grass[i] = minetest.get_content_id("default:grass_"..i)
@@ -83,12 +83,6 @@ minetest.register_on_generated(function(minp, maxp, seed)
 
 				-- next index
 				nixyz = nixyz + 1
-				--[[else
-					--print("node.name: "..vm:get_node_at({x=x,y=y,z=z}).name)
-					--print("node.id: "..data[nixyz])
-					--print('minetest.get_content_id("air"): '.. c_air)
-					--print("what the")
-				end-- if data]]
 				dixyz = dixyz + 1
 			end-- for x
 			dixyz = dixyz+16
