@@ -1,5 +1,8 @@
 local densenoise_offset = 1 - 2 * (minetest.setting_get("lumpmg_air_ratio") or 0.75)
 
+local YMIN = -31000
+local YMAX = 31000
+
 local np_density = {
 	offset = densenoise_offset,
 	scale = 1,
@@ -27,6 +30,13 @@ end
 local noisemap
 
 minetest.register_on_generated(function(minp, maxp, seed)
+	if minp.y > YMAX or maxp.y < YMIN then
+		return
+	end
+
+	minp.y = math.max(minp.y, YMIN)
+	maxp.y = math.min(maxp.y, YMAX)
+
 	local pr = PseudoRandom(seed)
 
 	-- read chunk data
@@ -34,9 +44,10 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	local data = vm:get_data()
 
 	local side_length = maxp.x - minp.x + 1
+	local y_length = maxp.y - minp.y + 1
 	local biglen = emax.x - emin.x + 1
 
-	local chulens = {x=side_length, y=side_length+2, z=side_length}
+	local chulens = {x=side_length, y=y_length+2, z=side_length}
 	local a = VoxelArea:new({MinEdge = emin, MaxEdge = emax})
 	local ystride = a.ystride
 
@@ -47,8 +58,9 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	local nixyz = 1
 	local dixyz = 1
 
-	local decrX = side_length^2*(side_length+2)-1 -- Decrement index every X line
+	local decrX = side_length^2*(y_length+2)-1 -- Decrement index every X line
 	--print(decrX)
+	--print(#density_map)
 
 	-- iterate through data and fill with materials
 	for x = minp.x, maxp.x do
