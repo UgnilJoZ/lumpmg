@@ -41,10 +41,8 @@ local c_obsidian = minetest.get_content_id("default:obsidian")
 local c_dirt     = minetest.get_content_id("default:dirt")
 local c_dirt_wg  = minetest.get_content_id("default:dirt_with_grass")
 local c_grass    = {}
-local blacklist_air = {[c_stone]=true, [c_dirt]=true, [c_dirt_wg]=true}
 for i = 1, 5 do
 	c_grass[i] = minetest.get_content_id("default:grass_"..i)
-	blacklist_air[c_grass[i]]=true
 end
 
 local noisemap
