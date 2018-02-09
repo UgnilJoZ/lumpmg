@@ -13,6 +13,19 @@ local np_density = {
 	flags = "eased"
 }
 
+local yspread = np_density.spread.y
+local max_density
+if np_density.persist == 1 then
+	max_density = np_density.octaves
+else
+	max_density = (1-np_density.persist^(np_density.octaves)) / (1-np_density.persist) * np_density.scale + np_density.offset
+end
+
+local density_decrease = max_density / yspread -- Density gradiant when getting close to the borders
+
+local YMIN2 = YMIN + yspread-1 -- Minimal Y at which lump density is maximal (decreases smoothly between YMIN and YMIN2)
+local YMAX2 = YMAX - yspread+1 -- Maximal Y at which lump density is maximal
+
 -- read content ids
 local c_air      = minetest.get_content_id("air")
 local c_ignore   = minetest.get_content_id("ignore")
@@ -53,6 +66,40 @@ minetest.register_on_generated(function(minp, maxp, seed)
 
 	-- generate noise data
 	local density_map = minetest.get_perlin_map(np_density, chulens):get3dMap_flat({x=minp.x, y=minp.y-1, z=minp.z})
+
+	if minp.y-1 < YMIN2 then -- If we are too close from the bottom border, decrease gradually the noise
+		local ndens = 1 -- Initialize perlin map index for setting noise to new value
+		local ymax_iter = math.min(maxp.y+1, math.ceil(YMIN2)-1)
+		local incrY = (y_length + minp.y - ymax_iter) * side_length
+		print(minp.y-1, ymax_iter)
+		for z = minp.z, maxp.z do
+			for y=minp.y-1, ymax_iter do
+				local offset = (YMIN2-y) * density_decrease
+				for x = minp.x, maxp.x do
+					density_map[ndens] = density_map[ndens] - offset
+					ndens = ndens + 1
+				end
+			end
+			ndens = ndens + incrY
+		end
+	end
+
+	if maxp.y + 1 > YMAX2 then -- If we are too close from the top border, decrease gradually the noise
+		local ndens = 1 -- Initialize perlin map index for setting noise to new value
+		local ymin_iter = math.max(minp.y-1, math.floor(YMAX2)+1)
+		local incrY = (y_length + ymin_iter - maxp.y) * side_length
+		print(ymin_iter, maxp.y+1)
+		for z = minp.z, maxp.z do
+			ndens = ndens + incrY
+			for y=ymin_iter, maxp.y+1 do
+				local offset = (y-YMAX2) * density_decrease
+				for x = minp.x, maxp.x do
+					density_map[ndens] = density_map[ndens] - offset
+					ndens = ndens + 1
+				end
+			end
+		end
+	end
 
 	-- initialize perlin map and data index
 	local nixyz = 1
