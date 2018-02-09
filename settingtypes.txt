@@ -1,0 +1,11 @@
+# Minimal height at which Lump Map Generator will generate.
+lumpmg_ymin (Min height) int -31000 -31000 31000
+
+# Maximal height at which Lump Map Generator will generate.
+lumpmg_ymax (Max height) int 31000 -31000 31000
+
+# Proportion of air
+lumpmg_air_ratio (Air ratio) float 0.75 0 1
+
+# Cumulate mapgens, don't override if true
+lumpmg_cumulative (Cumulative mapgen) bool false

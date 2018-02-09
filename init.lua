@@ -1,9 +1,12 @@
-local densenoise_offset = 1 - 2 * (minetest.setting_get("lumpmg_air_ratio") or 0.75)
+local mtsettings = minetest.settings
 
-local YMIN = -31000
-local YMAX = 31000
+local air_ratio = tonumber(mtsettings:get("lumpmg_air_ratio") or 0.75)
+local densenoise_offset = 1 - 2 * air_ratio
 
-local np_density = {
+local YMIN = tonumber(mtsettings:get("lumpmg_ymin") or -31000)
+local YMAX = tonumber(mtsettings:get("lumpmg_ymax") or 31000)
+
+np_density = {
 	offset = densenoise_offset,
 	scale = 1,
 	spread = {x=32, y=24, z=32},
@@ -12,6 +15,10 @@ local np_density = {
 	persist = 0.6,
 	flags = "eased"
 }
+
+if not mtsettings:get_bool("lumpmg_cumulative") then
+	minetest.set_mapgen_setting("mg_name", "singlenode")
+end
 
 local yspread = np_density.spread.y
 local max_density
@@ -71,7 +78,6 @@ minetest.register_on_generated(function(minp, maxp, seed)
 		local ndens = 1 -- Initialize perlin map index for setting noise to new value
 		local ymax_iter = math.min(maxp.y+1, math.ceil(YMIN2)-1)
 		local incrY = (y_length + minp.y - ymax_iter) * side_length
-		print(minp.y-1, ymax_iter)
 		for z = minp.z, maxp.z do
 			for y=minp.y-1, ymax_iter do
 				local offset = (YMIN2-y) * density_decrease
@@ -88,7 +94,6 @@ minetest.register_on_generated(function(minp, maxp, seed)
 		local ndens = 1 -- Initialize perlin map index for setting noise to new value
 		local ymin_iter = math.max(minp.y-1, math.floor(YMAX2)+1)
 		local incrY = (y_length + ymin_iter - maxp.y) * side_length
-		print(ymin_iter, maxp.y+1)
 		for z = minp.z, maxp.z do
 			ndens = ndens + incrY
 			for y=ymin_iter, maxp.y+1 do
@@ -154,8 +159,4 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	vm:set_lighting({day=0, night=0})
 	vm:calc_lighting()
 	vm:write_to_map(data)
-end)
-
-minetest.register_on_mapgen_init(function(mgparams)
-	minetest.set_mapgen_params({mgname="singlenode"})
 end)
